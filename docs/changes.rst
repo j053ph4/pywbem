@@ -156,6 +156,9 @@ Bug fixes
 
 * Correct issue in wbemcli.bat where it was not returning error level.
   see issue #727
+
+* Modify mof_compier documentation to indication issues with property
+  names that are compiler keywords. See issue #62.
   
 
 Build, test, quality
