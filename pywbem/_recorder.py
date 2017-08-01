@@ -37,7 +37,6 @@ from .cim_obj import CIMInstance, CIMInstanceName, CIMClass, CIMClassName, \
     CIMQualifierDeclaration, NocaseDict
 from .cim_types import CIMInt, CIMFloat, CIMDateTime
 from .exceptions import CIMError
-from .config import DEFAULT_MAX_LOG_ENTRY_SIZE
 from ._logging import PywbemLoggers, LOG_OPS_CALLS_NAME, LOG_HTTP_NAME
 
 if six.PY2:
@@ -260,6 +259,7 @@ class BaseOperationRecorder(object):
 
     def __init__(self):
         self._enabled = True
+        self._conn_id = None
         self.reset()
 
     def enable(self):
@@ -304,6 +304,8 @@ class BaseOperationRecorder(object):
         """Reset all the attributes in the class. This also allows setting
         the pull_op attribute that defines whether the operation is to be
         a traditional or pull operation.
+        This does NOT reset _conn.id as that exists throughthe life of
+        the connection.
         """
         self._pywbem_method = None
         self._pywbem_args = None
@@ -325,7 +327,7 @@ class BaseOperationRecorder(object):
         self._http_response_payload = None
         self._pull_op = pull_op
 
-    def stage_wbem_connection(self, url, **kwargs):
+    def stage_wbem_connection(self, url, conn_id, **kwargs):
         """
         Stage information about the connection. Used only by
         LogOperationRecorder.
@@ -444,7 +446,7 @@ class LogOperationRecorder(BaseOperationRecorder):
 
     All logging calls are at the debug level.
     """
-    def __init__(self):
+    def __init__(self, max_log_entry_size=None):
         """
         Create the the loggers for the following logging names
 
@@ -462,11 +464,11 @@ class LogOperationRecorder(BaseOperationRecorder):
         """
         super(LogOperationRecorder, self).__init__()
 
-        max_sz = DEFAULT_MAX_LOG_ENTRY_SIZE
+        max_sz = max_log_entry_size if max_log_entry_size else DEFAULT_MAX_LOG_ENTRY_SIZE
 
         self.opslogger = logging.getLogger(LOG_OPS_CALLS_NAME)
         opsdetaillevel = PywbemLoggers.get_logger_detail(LOG_OPS_CALLS_NAME)
-        self.ops_max_log_entry_size = max_sz if opsdetaillevel == 'min' \
+        self.ops_max_log_entry_size = max_sz if opsdetaillevel == 'min'  \
             else None
 
         self.httplogger = logging.getLogger(LOG_HTTP_NAME)
@@ -474,13 +476,23 @@ class LogOperationRecorder(BaseOperationRecorder):
         self.http_max_log_entry_size = max_sz if httpdetaillevel == 'min' \
             else None
 
-    def stage_pywbem_connection(self, url, **kwargs):
-        """Log connection information"""
+    def stage_wbem_connection(self, url, conn_id, **kwargs):
+        """
+        Log connection information. This includes the connection id
+        that should remain throught the life of the connection.
+        """
+        self._conn_id = conn_id
+
         if self.enabled:
+            # hide password
+            if 'creds' in kwargs and kwargs['creds'][1]:
+                kwargs['creds'] = (kwargs['creds'][0], '******')
+
             kwstr = \
                 ', '.join('{0}={1!r}'.format(k, v) for k, v in kwargs.items())
 
-            self.opslogger.debug('Connection: url=%s, %s', url, kwstr)
+            self.opslogger.debug('Connection: url=%s, id=%s %s', url, conn_id,
+                                 kwstr)
 
     def stage_pywbem_args(self, method, **kwargs):
         """
@@ -495,7 +507,8 @@ class LogOperationRecorder(BaseOperationRecorder):
             kwstr = \
                 ', '.join('{0}={1!r}'.format(k, v) for k, v in kwargs.items())
 
-            self.opslogger.debug('Request: %s(%s)', method, kwstr)
+            self.opslogger.debug('Request: %s:%s(%s)', method, self._conn_id,
+                                 kwstr)
 
     def stage_pywbem_result(self, ret, exc):
         """
@@ -515,8 +528,8 @@ class LogOperationRecorder(BaseOperationRecorder):
             else:
                 result = '%r' % result
 
-            self.opslogger.debug('%s: %s: %s', return_name,
-                                 self._pywbem_method,
+            self.opslogger.debug('%s: %s:%s(%s)', return_name,
+                                 self._pywbem_method, self._conn_id,
                                  result)
 
     def stage_http_request(self, version, url, target, method, headers,
@@ -526,9 +539,9 @@ class LogOperationRecorder(BaseOperationRecorder):
             # pylint: disable=attribute-defined-outside-init
             header_str = ' '.join('{0}:{1!r}'.format(k, v)
                                   for k, v in headers.items())
-            self.httplogger.debug('Request: %s %s %s %s\n%s\n%s',
-                                  method, url, target, version, header_str,
-                                  payload)
+            self.httplogger.debug('Request: %s:%s:%s %s %s\n%s\n%s',
+                                  method, url, self._conn_id, target, version,
+                                  header_str, payload)
 
     def stage_http_response1(self, version, status, reason, headers):
         """Set response http info including headers, status, etc. """
@@ -560,9 +573,10 @@ class LogOperationRecorder(BaseOperationRecorder):
             else:
                 payload = '%r' % payload.decode('utf-8')
 
-            self.httplogger.debug('Response: %s %s %s\n%s\n%s',
+            self.httplogger.debug('Response: %s:%s:%s %s\n%s\n%s',
                                   self._http_response_status,
                                   self._http_response_reason,
+                                  self._conn_id,
                                   self._http_response_version,
                                   header_str,
                                   payload)
