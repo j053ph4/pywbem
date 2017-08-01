@@ -134,7 +134,8 @@ class MetaPywbemLoggers(type):
         return 'PywbemLoggers({s.loggers!r})'.format(s=cls)
 
 
-class PywbemLoggers(object):
+# pylint: disable=no-init
+class PywbemLoggers(six.with_metaclass(MetaPywbemLoggers)):
     """
     Container for pywbem logger information when loggers are created. This
     class is a singleton, there is only one set of data for a pywbem
@@ -283,6 +284,7 @@ class PywbemLoggers(object):
                 if not log_filename:
                     raise ValueError('Filename required if log destination '
                                      'is "file"')
+                # pylint: disable=redefined-variable-type
                 handler = logging.FileHandler(log_filename)
                 format_string = '%(asctime)s-%(name)s-%(message)s'
             else:
