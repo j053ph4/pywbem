@@ -38,8 +38,7 @@ they should be used from the ``pywbem`` namespace.
 
 # This module is meant to be safe for 'import *'.
 
-__all__ = ['ENFORCE_INTEGER_RANGE', 'DEFAULT_ITER_MAXOBJECTCOUNT',
-           'DEFAULT_MAX_LOG_ENTRY_SIZE', 'DEFAULT_LOG_DESTINATION']
+__all__ = ['ENFORCE_INTEGER_RANGE', 'DEFAULT_ITER_MAXOBJECTCOUNT']
 
 #: Enforce the allowable value range for CIM integer types (e.g.
 #: :class:`~pywbem.Uint8`). For details, see the :class:`~pywbem.CIMInt` base
@@ -59,13 +58,4 @@ ENFORCE_INTEGER_RANGE = True
 #: used as the value for MaxObjectCount.
 #: Note that this does not necessarily optimize the performance of these
 #: operations.
-
 DEFAULT_ITER_MAXOBJECTCOUNT = 1000
-
-#: Maximum log entry size. An integer that sets the maximum size of each log
-#: entry if the log_detail_level flag is set.
-
-DEFAULT_MAX_LOG_ENTRY_SIZE = 1000
-
-#: Set default log destination.  None means that there will be no logging
-DEFAULT_LOG_DESTINATION = 'file'

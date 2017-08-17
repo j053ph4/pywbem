@@ -46,7 +46,10 @@ class BaseLoggingTests(unittest.TestCase):
     """Base class for logging unit tests"""
 
     def setUp(self):
-        PywbemLoggers.reset()
+        # reset the PywbemLoggers store for the next test.  This forces
+        # the dictionary back to empty. Since this is a class variable
+        # we clear it at the class level.
+        PywbemLoggers.loggers = {}
 
     def tearDown(self):
         LogCapture.uninstall_all()
