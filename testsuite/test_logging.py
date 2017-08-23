@@ -120,7 +120,7 @@ class TestLogParseErrors(BaseLoggingTests):
         try:
             # pylint: disable=protected-access
             PywbemLoggers._parse_log_specs(param)
-            self.fail('param should generate exception %s' % param)
+            self.fail('Param should generate exception %s' % param)
         except ValueError:
             pass
 
@@ -335,6 +335,22 @@ class TestLoggersCreate(BaseLoggingTests):
 
         self.valid_loggers_create(test_input, expected_result)
 
+    def test_get_logger_default(self):
+        """ Test the get_logger function."""
+        logger = get_logger(LOG_OPS_CALLS_NAME)
+        self.assertEqual(len(logger.handlers), 1)
+        log_info = PywbemLoggers.get_logger_info(LOG_OPS_CALLS_NAME)
+        self.assertEqual(log_info[2], 'none')
+        self.assertEqual(log_info[0], 'min')
+
+    def test_get_logger_invalid(self):
+        """ Test the get_logger function."""
+        try:
+            get_logger('pywbem.blah')
+            self.fail('Expected exception for invalid log name')
+        except ValueError:
+            pass
+
 
 class TestLoggerOutput(BaseLoggingTests):
     """Test output from logging"""
@@ -351,8 +367,8 @@ class TestLoggerOutput(BaseLoggingTests):
         self.assertNotEqual(my_logger, None,
                             'Valid named logger %s expected.'
                             % LOG_OPS_CALLS_NAME)
-        for name in PywbemLoggers.loggers:
-            print(PywbemLoggers.get_logger_info(name))
+        # for name in PywbemLoggers.loggers:
+        #    print(PywbemLoggers.get_logger_info(name))
         max_size = 1000
         result = 'This is fake return data'
         return_name = 'Return'

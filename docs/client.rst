@@ -296,10 +296,7 @@ Logging
 -------
 
 .. automodule:: pywbem._logging
-
-.. autoclass:: pywbem.PywbemLoggers
    :members:
-   :special-members: __str__
 
 .. autofunction:: pywbem.get_logger
 
